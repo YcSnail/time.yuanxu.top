@@ -3,7 +3,7 @@
     <header class="page-header">
       <div class="page-title">
         ⏳ 我的倒计时
-        <small>最近的排在最前 · 毫秒滚动</small>
+        <small>最近的排在最前</small>
       </div>
       <button class="icon-btn" title="退出" @click="logout">⎋</button>
     </header>
@@ -46,10 +46,12 @@ const loading = ref(true)
 const toast = ref('')
 const nowMs = ref(Date.now())
 
-let rafId = 0
+let timer = 0
 function tick() {
   nowMs.value = Date.now()
-  rafId = requestAnimationFrame(tick)
+  timer = setInterval(() => {
+    nowMs.value = Date.now()
+  }, 1000)
 }
 
 /* 最近的排在最前;已结束的沉底 */
@@ -102,7 +104,7 @@ onMounted(() => {
   tick()
 })
 
-onBeforeUnmount(() => cancelAnimationFrame(rafId))
+onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <style scoped>

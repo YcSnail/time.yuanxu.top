@@ -3,7 +3,7 @@
     <div class="enter-hero">
       <div class="enter-logo">⏳</div>
       <h1>我的倒计时</h1>
-      <p>为重要的时刻倒数<br />毫秒级滚动,最近优先展示</p>
+      <p>为重要的时刻倒数<br />最近优先展示,精确到秒</p>
     </div>
 
     <div class="enter-card">

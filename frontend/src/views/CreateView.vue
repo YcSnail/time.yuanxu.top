@@ -7,19 +7,36 @@
     </header>
 
     <main class="form-wrap">
-      <label class="field-label">标题</label>
-      <input
+      <van-field
         v-model="title"
-        class="text-input"
-        type="text"
-        maxlength="100"
+        label="标题"
         placeholder="例如:元旦、生日、项目上线…"
+        maxlength="100"
+        clearable
+        class="cd-field"
       />
 
-      <label class="field-label">目标时间(精确到秒)</label>
-      <input v-model="target" class="text-input" type="datetime-local" step="1" :min="minLocal" />
+      <van-field
+        :model-value="dateText"
+        readonly
+        is-link
+        label="日期"
+        placeholder="选择日期"
+        @click="showDate = true"
+        class="cd-field"
+      />
 
-      <div v-if="title && target" class="preview">
+      <van-field
+        :model-value="timeText"
+        readonly
+        is-link
+        label="时间"
+        placeholder="选择时间"
+        @click="showTime = true"
+        class="cd-field"
+      />
+
+      <div v-if="title && dateText && timeText" class="preview">
         <p>预览</p>
         <div class="preview-main">
           <span class="p-title">距离「{{ title }}」还有</span>
@@ -31,6 +48,28 @@
         {{ saving ? '保存中…' : '保存' }}
       </button>
     </main>
+
+    <!-- 日期选择 -->
+    <van-popup v-model:show="showDate" position="bottom" round>
+      <van-date-picker
+        v-model="dateValue"
+        :min-date="minDate"
+        :max-date="maxDate"
+        title="选择日期"
+        @confirm="onDateConfirm"
+        @cancel="showDate = false"
+      />
+    </van-popup>
+
+    <!-- 时间选择(精确到秒) -->
+    <van-popup v-model:show="showTime" position="bottom" round>
+      <van-time-picker
+        v-model="timeValue"
+        title="选择时间"
+        @confirm="onTimeConfirm"
+        @cancel="showTime = false"
+      />
+    </van-popup>
 
     <transition name="fade">
       <div v-if="error" class="error-banner">{{ error }}</div>
@@ -45,21 +84,44 @@ import { api } from '../api'
 
 const router = useRouter()
 const title = ref('')
-const target = ref('')
 const saving = ref(false)
 const error = ref('')
 
-const now = new Date()
-const minLocal = computed(() => {
-  const d = new Date(now.getTime() + 60000)
-  const p = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
-})
+/* ---- 日期/时间选择 ---- */
+const showDate = ref(false)
+const showTime = ref(false)
 
-const canSave = computed(() => title.value.trim().length > 0 && !!target.value)
+const minDate = new Date()
+const maxDate = new Date(2099, 11, 31)
+
+// Vant DatePicker 的值是 [年, 月, 日] 数组
+const today = new Date()
+const dateValue = ref([String(today.getFullYear()), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')])
+// Vant TimePicker 的值是 "HH:mm:ss" 字符串
+const timeValue = ref(
+  `${String((today.getHours() + 1) % 24).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}:00`,
+)
+
+const dateText = computed(() => dateValue.value.join('-'))
+const timeText = computed(() => timeValue.value)
+
+function onDateConfirm({ selectedValues }) {
+  dateValue.value = selectedValues
+  showDate.value = false
+}
+
+function onTimeConfirm({ selectedValues }) {
+  // selectedValues: ['时','分','秒']
+  timeValue.value = selectedValues.join(':')
+  showTime.value = false
+}
+
+/* ---- 提交 ---- */
+const canSave = computed(() => title.value.trim().length > 0 && !!dateText.value && !!timeText.value)
 
 const previewText = computed(() => {
-  const t = new Date(target.value).getTime()
+  const t = new Date(`${dateText.value} ${timeText.value}`).getTime()
+  if (isNaN(t)) return ''
   const diff = t - Date.now()
   if (diff <= 0) return '已到时间'
   const s = Math.floor(diff / 1000)
@@ -77,7 +139,7 @@ const previewText = computed(() => {
 
 async function save() {
   error.value = ''
-  const t = new Date(target.value)
+  const t = new Date(`${dateText.value} ${timeText.value}`)
   if (isNaN(t.getTime())) {
     error.value = '请选择有效的目标时间'
     return
@@ -104,36 +166,28 @@ async function save() {
 }
 
 .form-wrap {
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 18px 16px;
 }
 
-.field-label {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin: 8px 2px 2px;
-}
-
-.text-input {
-  height: 50px;
+.cd-field {
   background: var(--bg-2);
   border: 1px solid var(--card-border);
   border-radius: 12px;
-  padding: 0 14px;
-  color: var(--text);
-  font-size: 15px;
-  outline: none;
+  margin-bottom: 12px;
+  overflow: hidden;
 }
 
-.text-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+.cd-field :deep(.van-field__label) {
+  color: var(--text-dim);
+  width: 64px;
+}
+
+.cd-field :deep(.van-field__control) {
+  color: var(--text);
 }
 
 .preview {
-  margin-top: 18px;
+  margin-top: 8px;
   background: linear-gradient(160deg, var(--card), #131c30);
   border: 1px dashed var(--card-border);
   border-radius: var(--radius);
@@ -171,7 +225,7 @@ async function save() {
 }
 
 .error-banner {
-  margin: 0 20px;
+  margin: 0 16px;
   text-align: center;
   color: #fff;
   background: rgba(248, 113, 113, 0.16);

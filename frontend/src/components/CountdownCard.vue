@@ -29,12 +29,6 @@
       </div>
     </div>
 
-    <!-- 毫秒级滚动 -->
-    <div v-if="!ended" class="ms-row">
-      <span class="ms-box">{{ pad3(r.millis) }}</span>
-      <span class="ms-lbl">毫秒滚动</span>
-    </div>
-
     <div v-else class="ended-badge">⏹ 已完成</div>
 
     <div class="target">
@@ -45,7 +39,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { pad2, pad3, splitRemaining } from '../utils/countdown'
+import { pad2, splitRemaining } from '../utils/countdown'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -159,32 +153,6 @@ const formatTarget = computed(() => {
   opacity: 0.7;
   line-height: 1.1;
   margin-bottom: 14px;
-}
-
-.ms-row {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.ms-box {
-  display: inline-block;
-  min-width: 62px;
-  padding: 3px 10px;
-  border-radius: 8px;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
-  font-size: 18px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-  letter-spacing: 1px;
-}
-
-.ms-lbl {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-left: 6px;
 }
 
 .ended-badge {

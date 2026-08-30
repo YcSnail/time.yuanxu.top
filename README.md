@@ -7,9 +7,8 @@
 
 - **密码即身份**:进入时输入自己的密码;同一密码 = 同一账号,首次输入自动创建,之后直接登录
 - **密码复杂度校验**:必须同时包含大小写字母和数字、长度 ≥ 6,否则拒绝创建(前后端双重校验)
-- **倒计时管理**:自定义标题 + 精确到秒的目标时间,可删除
+- **倒计时管理**:自定义标题 + 精确到秒的目标时间(Vant DatePicker + TimePicker 选择),可删除
 - **最近优先**:未到期的倒计时按目标时间升序(最近的排最前),已结束的沉底置灰
-- **毫秒滚动**:秒以下三位毫秒实时滚动(60fps requestAnimationFrame)
 - **手机端预览**:430px 手机壳布局,桌面居中、真机全宽
 
 ## 技术栈
@@ -17,7 +16,7 @@
 | 端 | 技术 |
 | --- | --- |
 | 后端 | Go + Gin + GORM,MySQL 5.6,BCrypt + JWT |
-| 前端 | Vue 3 + Vite + Vue Router,pnpm |
+| 前端 | Vue 3 + Vite + Vue Router + **Vant 4**(移动端组件库),pnpm |
 | 部署 | GitHub Actions → 阿里云 ACR 镜像 → 服务器 docker compose + nginx,HTTPS(acme.sh) |
 
 ## 目录结构
@@ -32,9 +31,9 @@ time.yuanxu.top/
 │   ├── middleware/     # JWT 鉴权
 │   ├── utils/          # 密码复杂度校验
 │   └── Dockerfile.prod
-├── frontend/           # Vue 3 前端
-│   ├── src/views/      # EnterView / HomeView / CreateView
-│   ├── src/components/ # CountdownCard(毫秒滚动)
+├── frontend/           # Vue 3 前端(Vant 4)
+│   ├── src/views/      # EnterView / HomeView / CreateView(Vant 日期时间选择)
+│   ├── src/components/ # CountdownCard(天/时/分/秒倒计时)
 │   └── Dockerfile.prod
 ├── deploy/             # docker-compose.prod.yml、nginx vhost
 └── .github/workflows/  # Deploy:构建镜像 → 推 ACR → 服务器部署
