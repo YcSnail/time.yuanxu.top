@@ -41,5 +41,6 @@ export const api = {
   me: () => request('/me'),
   list: () => request('/countdowns'),
   create: (payload) => request('/countdowns', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id, payload) => request(`/countdowns/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   remove: (id) => request(`/countdowns/${id}`, { method: 'DELETE' }),
 }

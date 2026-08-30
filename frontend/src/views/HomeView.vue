@@ -5,7 +5,7 @@
         ⏳ 我的倒计时
         <small>最近的排在最前</small>
       </div>
-      <button class="icon-btn" title="退出" @click="logout">⎋</button>
+      <button class="logout-btn" @click="logout">退出</button>
     </header>
 
     <main class="list-wrap">
@@ -15,6 +15,7 @@
           :key="item.id"
           :item="item"
           :now-ms="nowMs"
+          @edit="edit(item)"
           @delete="remove(item)"
         />
       </transition-group>
@@ -83,6 +84,10 @@ async function load() {
   }
 }
 
+function edit(item) {
+  router.push({ path: '/create', query: { id: item.id } })
+}
+
 async function remove(item) {
   if (!window.confirm(`删除「${item.title}」这个倒计时?`)) return
   try {
@@ -121,6 +126,22 @@ onBeforeUnmount(() => clearInterval(timer))
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.logout-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border);
+}
+
+.logout-btn:active {
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.1);
 }
 
 .fab {

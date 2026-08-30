@@ -2,7 +2,7 @@
   <div class="create-page">
     <header class="page-header">
       <button class="icon-btn" @click="$router.back()">←</button>
-      <div class="page-title">新建倒计时</div>
+      <div class="page-title">{{ isEdit ? '编辑倒计时' : '新建倒计时' }}</div>
       <span style="width: 38px"></span>
     </header>
 
@@ -45,7 +45,7 @@
       </div>
 
       <button class="btn btn-primary save-btn" :disabled="saving || !canSave" @click="save">
-        {{ saving ? '保存中…' : '保存' }}
+        {{ saving ? '保存中…' : (isEdit ? '保存修改' : '保存') }}
       </button>
     </main>
 
@@ -61,7 +61,7 @@
       />
     </van-popup>
 
-    <!-- 时间选择(精确到秒) -->
+    <!-- 时间选择(精确到秒,默认 00:00:00) -->
     <van-popup v-model:show="showTime" position="bottom" round>
       <van-time-picker
         v-model="timeValue"
@@ -78,11 +78,12 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
 
 const router = useRouter()
+const route = useRoute()
 const title = ref('')
 const saving = ref(false)
 const error = ref('')
@@ -94,16 +95,13 @@ const showTime = ref(false)
 const minDate = new Date()
 const maxDate = new Date(2099, 11, 31)
 
-// Vant DatePicker 的值是 [年, 月, 日] 数组
 const today = new Date()
+// Vant 4 DatePicker / TimePicker 的 v-model 均为数组
 const dateValue = ref([String(today.getFullYear()), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')])
-// Vant TimePicker 的值是 "HH:mm:ss" 字符串
-const timeValue = ref(
-  `${String((today.getHours() + 1) % 24).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}:00`,
-)
+const timeValue = ref(['00', '00', '00'])
 
 const dateText = computed(() => dateValue.value.join('-'))
-const timeText = computed(() => timeValue.value)
+const timeText = computed(() => timeValue.value.join(':'))
 
 function onDateConfirm({ selectedValues }) {
   dateValue.value = selectedValues
@@ -111,10 +109,33 @@ function onDateConfirm({ selectedValues }) {
 }
 
 function onTimeConfirm({ selectedValues }) {
-  // selectedValues: ['时','分','秒']
-  timeValue.value = selectedValues.join(':')
+  timeValue.value = selectedValues
   showTime.value = false
 }
+
+/* ---- 编辑模式 ---- */
+const editId = computed(() => route.query.id ? Number(route.query.id) : 0)
+const isEdit = computed(() => editId.value > 0)
+
+const pad = (n) => String(n).padStart(2, '0')
+
+onMounted(async () => {
+  if (!editId.value) return
+  try {
+    const res = await api.list()
+    const item = (res.items || []).find((it) => it.id === editId.value)
+    if (!item) {
+      error.value = '倒计时不存在或已删除'
+      return
+    }
+    title.value = item.title
+    const d = new Date(item.target_time)
+    dateValue.value = [String(d.getFullYear()), pad(d.getMonth() + 1), pad(d.getDate())]
+    timeValue.value = [pad(d.getHours()), pad(d.getMinutes()), pad(d.getSeconds())]
+  } catch (e) {
+    error.value = e.message
+  }
+})
 
 /* ---- 提交 ---- */
 const canSave = computed(() => title.value.trim().length > 0 && !!dateText.value && !!timeText.value)
@@ -148,9 +169,14 @@ async function save() {
     error.value = '目标时间必须晚于当前时间'
     return
   }
+  const payload = { title: title.value.trim(), target_time: t.toISOString() }
   saving.value = true
   try {
-    await api.create({ title: title.value.trim(), target_time: t.toISOString() })
+    if (isEdit.value) {
+      await api.update(editId.value, payload)
+    } else {
+      await api.create(payload)
+    }
     router.push('/')
   } catch (e) {
     error.value = e.message

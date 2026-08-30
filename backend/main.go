@@ -42,6 +42,7 @@ func main() {
 			authed.GET("/me", authH.Me)
 			authed.GET("/countdowns", cdH.List)
 			authed.POST("/countdowns", cdH.Create)
+			authed.PUT("/countdowns/:id", cdH.Update)
 			authed.DELETE("/countdowns/:id", cdH.Delete)
 		}
 	}

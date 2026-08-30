@@ -68,6 +68,56 @@ func (h *CountdownHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"item": item})
 }
 
+// Update edits an existing countdown owned by the current user.
+func (h *CountdownHandler) Update(c *gin.Context) {
+	uid := c.GetUint("uid")
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的倒计时"})
+		return
+	}
+
+	var req createRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请填写标题和目标时间"})
+		return
+	}
+
+	title := strings.TrimSpace(req.Title)
+	if title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "标题不能为空"})
+		return
+	}
+	if utf8.RuneCountInString(title) > 100 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "标题不能超过 100 个字符"})
+		return
+	}
+
+	target, err := parseTargetTime(req.TargetTime)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "时间格式错误,请选择有效时间"})
+		return
+	}
+	if !target.After(time.Now()) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "目标时间必须晚于当前时间"})
+		return
+	}
+
+	var item models.Countdown
+	if err := h.DB.Where("id = ? AND user_id = ?", id, uid).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "倒计时不存在"})
+		return
+	}
+
+	item.Title = title
+	item.TargetTime = target
+	if err := h.DB.Save(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败,请稍后再试"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"item": item})
+}
+
 // Delete removes a countdown owned by the current user.
 func (h *CountdownHandler) Delete(c *gin.Context) {
 	uid := c.GetUint("uid")

@@ -1,6 +1,9 @@
 <template>
   <div class="card" :class="{ ended }">
-    <button class="del" title="删除" @click="$emit('delete')">✕</button>
+    <div class="card-actions">
+      <button class="act-btn" title="编辑" @click="$emit('edit')">✎</button>
+      <button class="act-btn danger" title="删除" @click="$emit('delete')">✕</button>
+    </div>
 
     <div class="title" :class="{ dim: ended }">
       <span v-if="!ended">距离「{{ item.title }}」还有</span>
@@ -83,20 +86,30 @@ const formatTarget = computed(() => {
   filter: saturate(0.4);
 }
 
-.del {
+.card-actions {
   position: absolute;
   top: 10px;
   right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.act-btn {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   color: var(--text-dim);
   background: rgba(255, 255, 255, 0.05);
   font-size: 13px;
-  z-index: 2;
 }
 
-.del:active {
+.act-btn:active {
+  color: var(--accent);
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.act-btn.danger:active {
   color: var(--danger);
   background: rgba(248, 113, 113, 0.15);
 }
