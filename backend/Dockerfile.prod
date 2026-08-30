@@ -21,5 +21,5 @@ RUN apk add --no-cache ca-certificates tzdata && \
 WORKDIR /app
 COPY --from=builder /out/timecd /app/timecd
 
-EXPOSE 8090
+EXPOSE 8095
 ENTRYPOINT ["/app/timecd"]

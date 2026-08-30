@@ -69,5 +69,5 @@ cd frontend && pnpm install && pnpm dev
 - `secrets.ACR_USERNAME` / `secrets.ACR_PASSWORD` — 阿里云 ACR 登录
 - `secrets.SSH_HOST` / `secrets.SSH_USER` / `secrets.SSH_PRIVATE_KEY` — 部署服务器
 
-服务器约定:MySQL 5.6 在宿主机 `127.0.0.1:3306`,后端容器 host 网络占 **8090**,
+服务器约定:MySQL 5.6 在宿主机 `127.0.0.1:3306`,后端容器 host 网络占 **8095**,
 前端容器占 **8082**,宿主机 nginx 统一反代(证书在 `/usr/local/nginx/conf/ssl/time.yuanxu.top/`)。
