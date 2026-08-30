@@ -1,0 +1,101 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  ACR_REGISTRY: crpi-nyuaanww67ixn9bp.cn-shanghai.personal.cr.aliyuncs.com
+  ACR_NAMESPACE: ${{ vars.ACR_NAMESPACE }}
+  IMAGE_BACKEND: timecd-backend
+  IMAGE_FRONTEND: timecd-frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ========== 前端构建 ==========
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # ========== 登录阿里云 ACR ==========
+      - name: Log in to Alibaba Cloud ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      # ========== 构建 & 推送镜像 ==========
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.IMAGE_FRONTEND }}:latest
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.IMAGE_BACKEND }}:latest
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+
+      # ========== 同步 compose 文件 ==========
+      - name: Upload compose file
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: deploy/docker-compose.prod.yml
+          target: /home/wwwroot/time.yuanxu.top/
+          strip_components: 1
+
+      # ========== 服务器部署 ==========
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1
+        env:
+          ACR_REGISTRY: ${{ env.ACR_REGISTRY }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          ACR_NAMESPACE: ${{ env.ACR_NAMESPACE }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: ACR_REGISTRY,ACR_USERNAME,ACR_PASSWORD,ACR_NAMESPACE
+          script: |
+            set -e
+            mkdir -p /home/wwwroot/time.yuanxu.top/backend
+            echo "$ACR_PASSWORD" | docker login -u "$ACR_USERNAME" --password-stdin "$ACR_REGISTRY" > /dev/null 2>&1
+            cd /home/wwwroot/time.yuanxu.top
+            docker pull "$ACR_REGISTRY/$ACR_NAMESPACE/timecd-backend:latest"
+            docker pull "$ACR_REGISTRY/$ACR_NAMESPACE/timecd-frontend:latest"
+            export ACR_REGISTRY ACR_NAMESPACE IMAGE_TAG=latest
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml ps
+            /usr/local/nginx/sbin/nginx -t && /usr/local/nginx/sbin/nginx -s reload
+            docker image prune -f > /dev/null 2>&1 || true

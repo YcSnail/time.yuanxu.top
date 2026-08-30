@@ -1,0 +1,25 @@
+# ===== 构建阶段 =====
+FROM golang:1.27-alpine AS builder
+
+WORKDIR /src
+ENV CGO_ENABLED=0 GOOS=linux GOPROXY=https://goproxy.cn,direct
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN go build -trimpath -ldflags="-s -w" -o /out/timecd .
+
+# ===== 运行阶段 =====
+# CentOS 7 老内核:运行时只需静态二进制 + 证书 + 时区,alpine 3.20 钉住版本
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates tzdata && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
+WORKDIR /app
+COPY --from=builder /out/timecd /app/timecd
+
+EXPOSE 8090
+ENTRYPOINT ["/app/timecd"]

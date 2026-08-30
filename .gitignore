@@ -1,0 +1,18 @@
+# 依赖与构建产物
+node_modules/
+frontend/dist/
+backend/timecd
+backend/*.exe
+
+# 本地截图/开发产物
+.shots/
+
+# 环境与密钥(永不入库)
+backend/.env
+*.local
+
+# IDE / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

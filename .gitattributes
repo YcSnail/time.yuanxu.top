@@ -1,0 +1,10 @@
+# 统一 LF 换行(Docker 构建在 Linux 上,shell/配置文件需要 LF)
+* text=auto eol=lf
+
+# 二进制
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.exe binary

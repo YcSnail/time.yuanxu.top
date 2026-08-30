@@ -1,0 +1,27 @@
+# time.yuanxu.top 生产部署编排(与 zy.yuanxu.top 同模式)
+#   backend : network_mode host + 端口 8090(zy 的 backend 已占 8080,不能冲突)
+#             直接访问宿主机 MySQL 5.6(127.0.0.1:3306),.env 挂载进容器
+#   frontend: nginx:1.27.5-alpine 静态站点,宿主机端口 8082(zy 的 frontend 已占 8081)
+# 对外统一由宿主机 nginx vhost time.yuanxu.top.conf 反代:
+#   location /      -> 127.0.0.1:8082
+#   location /api/  -> 127.0.0.1:8090
+version: "3.8"
+
+services:
+  backend:
+    image: ${ACR_REGISTRY:-crpi-nyuaanww67ixn9bp.cn-shanghai.personal.cr.aliyuncs.com}/${ACR_NAMESPACE:-yc_snail}/timecd-backend:${IMAGE_TAG:-latest}
+    network_mode: host
+    environment:
+      PORT: 8090
+      TZ: Asia/Shanghai
+    volumes:
+      - /home/wwwroot/time.yuanxu.top/backend/.env:/app/.env:ro
+    restart: unless-stopped
+
+  frontend:
+    image: ${ACR_REGISTRY:-crpi-nyuaanww67ixn9bp.cn-shanghai.personal.cr.aliyuncs.com}/${ACR_NAMESPACE:-yc_snail}/timecd-frontend:${IMAGE_TAG:-latest}
+    ports:
+      - "8082:80"
+    environment:
+      TZ: Asia/Shanghai
+    restart: unless-stopped
