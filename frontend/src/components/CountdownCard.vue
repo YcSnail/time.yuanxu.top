@@ -15,17 +15,17 @@
         <span class="num">{{ pad2(r.days) }}</span>
         <span class="lbl">天</span>
       </div>
-      <span class="sep">:</span>
+      <span class="sep" aria-hidden="true"></span>
       <div class="unit">
         <span class="num">{{ pad2(r.hours) }}</span>
         <span class="lbl">时</span>
       </div>
-      <span class="sep">:</span>
+      <span class="sep" aria-hidden="true"></span>
       <div class="unit">
         <span class="num">{{ pad2(r.minutes) }}</span>
         <span class="lbl">分</span>
       </div>
-      <span class="sep">:</span>
+      <span class="sep" aria-hidden="true"></span>
       <div class="unit">
         <span class="num">{{ pad2(r.seconds) }}</span>
         <span class="lbl">秒</span>
@@ -127,8 +127,11 @@ const formatTarget = computed(() => {
 }
 
 .digits {
+  /* 数字行顶部对齐,分隔符按数字行高居中,保证与数字中线一致 */
+  --num-size: 34px;
+  --num-lh: 1.1;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 6px;
   justify-content: center;
 }
@@ -142,7 +145,7 @@ const formatTarget = computed(() => {
 
 .num {
   font-family: 'SF Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace;
-  font-size: 34px;
+  font-size: var(--num-size);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #fff;
@@ -151,7 +154,7 @@ const formatTarget = computed(() => {
   background-clip: text;
   color: transparent;
   text-shadow: 0 0 18px rgba(56, 189, 248, 0.5);
-  line-height: 1.1;
+  line-height: var(--num-lh);
 }
 
 .lbl {
@@ -159,13 +162,23 @@ const formatTarget = computed(() => {
   color: var(--text-dim);
 }
 
+/* 冒号字形在行框内偏下,改用两个圆点按数字行高精确居中 */
 .sep {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--accent);
+  height: calc(var(--num-size) * var(--num-lh));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+}
+
+.sep::before,
+.sep::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
   opacity: 0.7;
-  line-height: 1.1;
-  margin-bottom: 14px;
 }
 
 .ended-badge {
